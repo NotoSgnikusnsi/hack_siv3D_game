@@ -174,7 +174,7 @@ public:
         // すべてのブロックを描画する
         for (const auto& block : m_blocks)
         {
-            block.stretched(-1).draw(HSV(block.y - 100));//30
+            block.stretched(-1).draw(HSV(block.y - 100));//40
         }
 
         // ボールを描く
