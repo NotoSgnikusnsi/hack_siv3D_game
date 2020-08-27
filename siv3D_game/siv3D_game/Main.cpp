@@ -95,8 +95,8 @@ private:
     // ボール
     Circle m_ball = Circle(400, 400, 8);
 
-    // パドル
-    Rect m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 60, 10);
+    // パドル x=60→x=100
+    Rect m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 100, 10);
 
     // スコア
     int32 m_score = 0;
@@ -107,7 +107,7 @@ public:
         : IScene(init)
     {
         // 横 (Scene::Width() / blockSize.x) 個、縦 5 個のブロックを配列に追加する
-        for (auto p : step(Size((Scene::Width() / blockSize.x), 5)))
+        for (auto p : step(Size((Scene::Width() / blockSize.x), 10)))
         {
             m_blocks << Rect(p.x * blockSize.x, 60 + p.y * blockSize.y, blockSize);
         }
@@ -115,8 +115,8 @@ public:
 
     void update() override
     {
-        // パドルを操作
-        m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 60, 10);
+        // パドルを操作 x=60→x=100
+        m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 100, 10);
 
         // ボールを移動
         m_ball.moveBy(m_ballVelocity * Scene::DeltaTime());
@@ -174,7 +174,7 @@ public:
         // すべてのブロックを描画する
         for (const auto& block : m_blocks)
         {
-            block.stretched(-1).draw(HSV(block.y - 40));
+            block.stretched(-1).draw(HSV(block.y - 100));//30
         }
 
         // ボールを描く
