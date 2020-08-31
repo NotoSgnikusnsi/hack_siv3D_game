@@ -19,24 +19,23 @@ void Main()
     constexpr Size blockSize(40, 20);
 
     // ブロックの座標,サイズ
-    Array<Rect> blocks =
+    Array<Rect> blocks;
+
+    for (int32 i = 0; i < 20; ++i)
     {
-        Rect(Random(760), Random(300) ,blockSize), Rect(Random(760), Random(300) ,blockSize),
-        Rect(Random(760), Random(300) ,blockSize), Rect(Random(760), Random(300) ,blockSize),
-        Rect(Random(760), Random(300) ,blockSize), Rect(Random(760), Random(300) ,blockSize),
-        Rect(Random(760), Random(300) ,blockSize), Rect(Random(760), Random(300) ,blockSize),
-        Rect(Random(760), Random(300) ,blockSize), Rect(Random(760), Random(300) ,blockSize),
-        Rect(Random(760), Random(300) ,blockSize), Rect(Random(760), Random(300) ,blockSize),
-        Rect(Random(760), Random(300) ,blockSize), Rect(Random(760), Random(300) ,blockSize),
-        Rect(Random(760), Random(300) ,blockSize), Rect(Random(760), Random(300) ,blockSize),
-        Rect(Random(760), Random(300) ,blockSize), Rect(Random(760), Random(300) ,blockSize)
+        blocks << Rect(Random(760), Random(300), blockSize);
     };
+    //スコア
+    int32 m_score = 0;
+
+    //スコアフォント
+    FontAsset::Register(U"Score", 36, Typeface::Bold);
+
 
     while (System::Update())
     {
-
         // パドルの座標,大きさ((x座標マウス,y座標)横,縦)
-        const Rect paddle(Arg::center(Cursor::Pos().x, 500), 60, 10);
+        const Rect paddle(Arg::center(Cursor::Pos().x, 500), 70, 10);
 
         // ボールを移動
         ball.moveBy(ballVelocity * Scene::DeltaTime());
@@ -52,6 +51,9 @@ void Main()
 
                 // ブロックを配列から削除（イテレータが無効になるので注意）
                 blocks.erase(it);
+
+                //スコアに加算
+                ++m_score;
 
                 // これ以上チェックしない  
                 break;
@@ -78,17 +80,19 @@ void Main()
             ballVelocity = Vec2((ball.x - paddle.center().x) * 10, -ballVelocity.y).setLength(speed);
         }
 
-
-
         // ボールを描く
         ball.draw(ColorF(0, 0, 0));
 
         //ブロックを描く
         for (const auto& block : blocks)
         {
-            block.draw(ColorF(0, 0, 0));
+             block.draw(ColorF(0, 0, 0));
         }
+
         //パドルを描く
         paddle.draw(ColorF(0, 0, 0));
+
+        //スコア表示
+        FontAsset(U"Score")(m_score).drawAt(Scene::Center().x, 350 , ColorF(0, 0, 0));
     }
 }
