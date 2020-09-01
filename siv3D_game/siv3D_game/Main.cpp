@@ -1,56 +1,140 @@
-﻿
-# include <Siv3D.hpp> 
-void Main()
+﻿# include <Siv3D.hpp>
+
+// シーンの名前
+enum class State
 {
-    //背景色
-    Scene::SetBackground(Palette::White);
+    Title,
+    Game,
+    End,
+};
 
+// ゲームデータ
+struct GameData
+{
+    // ハイスコア
+    int32 highScore = 0;
+};
 
-    //ボールの座標,大きさ(x座標,y座標,半径8)
-    Circle ball(400, 400, 8);
+// シーン管理クラス
+using MyApp = SceneManager<State, GameData>;
 
-    //ボール速さ
-    constexpr double speed = 480.0;
+// タイトルシーン
+class Title : public MyApp::Scene
+{
+private:
 
-    //ボール速度
-    Vec2 ballVelocity(0, -speed);
+    Rect m_startButton = Rect(Arg::center = Scene::Center().movedBy(0, 0), 300, 60);
+    Transition m_startTransition = Transition(0.4s, 0.2s);
 
-    //ブロックサイズ
-    constexpr Size blockSize(40, 20);
+    Rect m_exitButton = Rect(Arg::center = Scene::Center().movedBy(0, 100), 300, 60);
+    Transition m_exitTransition = Transition(0.4s, 0.2s);
+
+public:
+
+    Title(const InitData& init)
+        : IScene(init) {}
+
+    void update() override
+    {
+        m_startTransition.update(m_startButton.mouseOver());
+        m_exitTransition.update(m_exitButton.mouseOver());
+
+        if (m_startButton.mouseOver() || m_exitButton.mouseOver())
+        {
+            Cursor::RequestStyle(CursorStyle::Hand);
+        }
+
+        if (m_startButton.leftClicked())
+        {
+            changeScene(State::Game);
+        }
+
+        if (m_exitButton.leftClicked())
+        {
+            System::Exit();
+        }
+    }
+
+    void draw() const override
+    {
+        const String titleText = U"ブロックくずし";
+        const Vec2 center(Scene::Center().x, 120);
+        FontAsset(U"Title")(titleText).drawAt(center.movedBy(4, 6), ColorF(0.0, 0.5));
+        FontAsset(U"Title")(titleText).drawAt(center);
+
+        m_startButton.draw(ColorF(1.0, m_startTransition.value())).drawFrame(2);
+        m_exitButton.draw(ColorF(1.0, m_exitTransition.value())).drawFrame(2);
+
+        FontAsset(U"Menu")(U"はじめる").drawAt(m_startButton.center(), Palette::White);
+        FontAsset(U"Menu")(U"おわる").drawAt(m_exitButton.center(), Palette::White);
+
+        Rect(0, 500, Scene::Width(), Scene::Height() - 500)
+            .draw(Arg::top = ColorF(0.0, 0.0), Arg::bottom = ColorF(0.0, 0.5));
+
+        const int32 highScore = getData().highScore;
+        FontAsset(U"Score")(U"High score: {}"_fmt(highScore)).drawAt(Vec2(620, 550));
+    }
+};
+
+// ゲームシーン
+class Game : public MyApp::Scene
+{
+private:
+
+    // ブロックのサイズ
+    static constexpr Size blockSize = Size(40, 20);
+
+    // ボールの速さ
+    static constexpr double speed = 480.0;
 
     // ブロックの座標,サイズ
-    Array<Rect> blocks;
+    Array<Rect> m_blocks;
 
-    for (int32 i = 0; i < 20; ++i)
-    {
-        blocks << Rect(Random(760), Random(300), blockSize);
-    };
-    //スコア
+    // ボールの速度
+    Vec2 m_ballVelocity = Vec2(0, -speed);
+
+    // ボール
+    Circle m_ball = Circle(400, 400, 8);
+
+    // パドル
+    Rect m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 70, 10);
+
+    // スコア
     int32 m_score = 0;
 
-    //スコアフォント
-    FontAsset::Register(U"Score", 36, Typeface::Bold);
+public:
 
-
-    while (System::Update())
+    //ブロックの生成
+    Game(const InitData& init)
+        : IScene(init)
     {
-        // パドルの座標,大きさ((x座標マウス,y座標)横,縦)
-        const Rect paddle(Arg::center(Cursor::Pos().x, 500), 70, 10);
+        for (int32 i = 0; i < 20; ++i)
+        {
+            m_blocks << Rect(Random(760), Random(300), blockSize);
+        };
+
+    }
+
+
+    void update() override
+    {
+        // パドルを操作
+        m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 60, 10);
 
         // ボールを移動
-        ball.moveBy(ballVelocity * Scene::DeltaTime());
+        m_ball.moveBy(m_ballVelocity * Scene::DeltaTime());
 
         // ブロックを順にチェック
-        for (auto it = blocks.begin(); it != blocks.end(); ++it)
+        for (auto it = m_blocks.begin(); it != m_blocks.end(); ++it)
         {
             // ボールとブロックが交差していたら
-            if (it->intersects(ball))
+            if (it->intersects(m_ball))
             {
                 // ボールの向きを反転する
-                (it->bottom().intersects(ball) || it->top().intersects(ball) ? ballVelocity.y : ballVelocity.x) *= -1;
+                (it->bottom().intersects(m_ball) || it->top().intersects(m_ball) ? m_ballVelocity.y : m_ballVelocity.x) *= -1;
 
                 // ブロックを配列から削除（イテレータが無効になるので注意）
-                blocks.erase(it);
+                m_blocks.erase(it);
 
                 //スコアに加算
                 ++m_score;
@@ -62,37 +146,83 @@ void Main()
 
 
         // 天井にぶつかったらはね返る
-        if (ball.y < 0 && ballVelocity.y < 0)
+        if (m_ball.y < 0 && m_ballVelocity.y < 0)
         {
-            ballVelocity.y *= -1;
+            m_ballVelocity.y *= -1;
+        }
+
+        if (m_ball.y > Scene::Height())
+        {
+            changeScene(State::Title);
+            getData().highScore = Max(getData().highScore, m_score);
         }
 
         // 左右の壁にぶつかったらはね返る
-        if ((ball.x < 0 && ballVelocity.x < 0) || (Scene::Width() < ball.x && ballVelocity.x > 0))
+        if ((m_ball.x < 0 && m_ballVelocity.x < 0) || (Scene::Width() < m_ball.x && m_ballVelocity.x > 0))
         {
-            ballVelocity.x *= -1;
+            m_ballVelocity.x *= -1;
         }
 
         // パドルにあたったらはね返る
-        if (ballVelocity.y > 0 && paddle.intersects(ball))
+        if (m_ballVelocity.y > 0 && m_paddle.intersects(m_ball))
         {
             // パドルの中心からの距離に応じてはね返る向きを変える
-            ballVelocity = Vec2((ball.x - paddle.center().x) * 10, -ballVelocity.y).setLength(speed);
+            m_ballVelocity = Vec2((m_ball.x - m_paddle.center().x) * 10, -m_ballVelocity.y).setLength(speed);
+        }
+    };
+
+    void draw() const override
+    {
+        //スコア表示
+        FontAsset(U"Score")(m_score).drawAt(Scene::Center().x, 350, Palette::White);
+
+        // すべてのブロックを描画する
+        for (const auto& block : m_blocks)
+        {
+            block.stretched(-1).draw(HSV(block.y - 40));
         }
 
         // ボールを描く
-        ball.draw(ColorF(0, 0, 0));
+        m_ball.draw();
 
-        //ブロックを描く
-        for (const auto& block : blocks)
+        // パドルを描く
+        m_paddle.draw();
+    }
+};
+
+class End : public MyApp::Scene
+{
+    void draw() const override
+    {
+        const String titleText = U"ゲームクリア";
+        const Vec2 center(Scene::Center().x, 120);
+        FontAsset(U"Title")(titleText).drawAt(center.movedBy(4, 6), ColorF(0.0, 0.5));
+        FontAsset(U"Title")(titleText).drawAt(center);
+    };
+};
+
+void Main()
+{
+    // 使用するフォントアセットを登録
+    FontAsset::Register(U"Title", 120, U"example/font/AnnyantRoman/AnnyantRoman.ttf");
+    FontAsset::Register(U"Menu", 30, Typeface::Regular);
+    FontAsset::Register(U"Score", 36, Typeface::Bold);
+
+    // 背景色を設定
+    Scene::SetBackground(ColorF(0, 0, 0));
+
+    // シーンと遷移時の色を設定
+    MyApp manager;
+    manager
+        .add<Title>(State::Title)
+        .add<Game>(State::Game)
+        .setFadeColor(ColorF(1.0));
+
+    while (System::Update())
+    {
+        if (!manager.update())
         {
-             block.draw(ColorF(0, 0, 0));
+            break;
         }
-
-        //パドルを描く
-        paddle.draw(ColorF(0, 0, 0));
-
-        //スコア表示
-        FontAsset(U"Score")(m_score).drawAt(Scene::Center().x, 350 , ColorF(0, 0, 0));
     }
 }
