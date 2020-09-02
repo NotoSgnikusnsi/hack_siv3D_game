@@ -5,7 +5,6 @@ enum class State
 {
     Title,
     Game,
-    End,
 };
 
 // ゲームデータ
@@ -80,15 +79,14 @@ public:
 class Game : public MyApp::Scene
 {
 private:
-
     // ブロックのサイズ
     static constexpr Size blockSize = Size(40, 20);
 
-    // ボールの速さ
-    static constexpr double speed = 480.0;
-
-    // ブロックの座標,サイズ
+    // ブロック宣言
     Array<Rect> m_blocks;
+    
+    // ボールの速さ
+    int32 speed = 480.0;
 
     // ボールの速度
     Vec2 m_ballVelocity = Vec2(0, -speed);
@@ -97,29 +95,39 @@ private:
     Circle m_ball = Circle(400, 400, 8);
 
     // パドル
-    Rect m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 70, 10);
+    Rect m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 80, 10);
+
+    //アイテム宣言
+    Array<Rect> m_item;
 
     // スコア
     int32 m_score = 0;
 
+    int32 v = 0;
+
 public:
 
-    //ブロックの生成
+    
     Game(const InitData& init)
         : IScene(init)
     {
+        //ブロックの生成
         for (int32 i = 0; i < 20; ++i)
         {
             m_blocks << Rect(Random(760), Random(300), blockSize);
         };
 
+        //アイテムの生成
+        for (int32 m = 0; m < 10; ++m)
+        {
+            m_item << Rect(Random(760), Random(300), 20, 20);
+        };
     }
-
 
     void update() override
     {
         // パドルを操作
-        m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 60, 10);
+        m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 80 + v , 10);
 
         // ボールを移動
         m_ball.moveBy(m_ballVelocity * Scene::DeltaTime());
@@ -138,12 +146,40 @@ public:
 
                 //スコアに加算
                 ++m_score;
+                
+                //ボールに当たると加速
+                speed = speed + 20.0;
+
+                //５の倍数の時ボールのスピードの変化
+                /*
+                if (m_score == 5 || m_score == 10 || m_score == 15)
+                {
+                    speed = speed + 100.0;
+                    Vec2 m_ballVelocity ;
+                };
+                */
 
                 // これ以上チェックしない  
                 break;
             }
         }
 
+        //アイテムを順にチェック
+        for (auto a = m_item.begin(); a != m_item.end(); ++a)
+        {
+            // ボールとアイテムが交差していたら
+            if (a->intersects(m_ball))
+            {
+                // アイテムを配列から削除（イテレータが無効になるので注意）
+                m_item.erase(a);
+
+                //ボールに当たると加速
+                v = v + 10;
+
+                // これ以上チェックしない  
+                break;
+            }
+        }
 
         // 天井にぶつかったらはね返る
         if (m_ball.y < 0 && m_ballVelocity.y < 0)
@@ -176,10 +212,16 @@ public:
         //スコア表示
         FontAsset(U"Score")(m_score).drawAt(Scene::Center().x, 350, Palette::White);
 
-        // すべてのブロックを描画する
+        //すべてのブロックを描画する
         for (const auto& block : m_blocks)
         {
             block.stretched(-1).draw(HSV(block.y - 40));
+        }
+
+        //すべてのアイテムを描画する
+        for (const auto& item : m_item)
+        {
+            item.stretched(-1).draw(Palette::White);
         }
 
         // ボールを描く
@@ -188,17 +230,6 @@ public:
         // パドルを描く
         m_paddle.draw();
     }
-};
-
-class End : public MyApp::Scene
-{
-    void draw() const override
-    {
-        const String titleText = U"ゲームクリア";
-        const Vec2 center(Scene::Center().x, 120);
-        FontAsset(U"Title")(titleText).drawAt(center.movedBy(4, 6), ColorF(0.0, 0.5));
-        FontAsset(U"Title")(titleText).drawAt(center);
-    };
 };
 
 void Main()
