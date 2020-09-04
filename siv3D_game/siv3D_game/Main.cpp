@@ -5,6 +5,7 @@ enum class State
 {
     Title,
     Game,
+    End,
 };
 
 // ゲームデータ
@@ -13,6 +14,7 @@ struct GameData
     // ハイスコア
     int32 highScore = 0;
 };
+
 
 // シーン管理クラス
 using MyApp = SceneManager<State, GameData>;
@@ -187,6 +189,7 @@ public:
             m_ballVelocity.y *= -1;
         }
 
+        //タイトルシーンへ戻る
         if (m_ball.y > Scene::Height())
         {
             changeScene(State::Title);
@@ -204,6 +207,12 @@ public:
         {
             // パドルの中心からの距離に応じてはね返る向きを変える
             m_ballVelocity = Vec2((m_ball.x - m_paddle.center().x) * 10, -m_ballVelocity.y).setLength(speed);
+        }
+
+        //ゲームクリアシーンへ移行
+        if (m_score == 20)
+        {
+            changeScene(State::End);
         }
     };
 
@@ -232,10 +241,55 @@ public:
     }
 };
 
+class End : public MyApp::Scene
+{
+private:
+
+    Rect m_endButton = Rect(Arg::center = Scene::Center().movedBy(0, 0), 300, 60);
+    Transition m_endTransition = Transition(0.4s, 0.2s);
+
+public:
+
+    End(const InitData& init)
+        : IScene(init)
+    {
+    
+    }
+
+    void update() override
+    {
+        m_endTransition.update(m_endButton.mouseOver());
+        
+
+        if (m_endButton.mouseOver())
+        {
+            Cursor::RequestStyle(CursorStyle::Hand);
+        }
+
+        if (m_endButton.leftClicked())
+        {
+            System::Exit();
+            //changeScene(State::Title);
+        }
+    }
+
+    void draw() const override
+    {
+        const String endText = U"ゲームクリア";
+        const Vec2 center(Scene::Center().x, 120);
+        FontAsset(U"End")(endText).drawAt(center.movedBy(4, 6), ColorF(0.0, 0.5));
+        FontAsset(U"End")(endText).drawAt(center);
+
+        m_endButton.draw(ColorF(1.0, m_endTransition.value())).drawFrame(2);
+
+        FontAsset(U"Menu")(U"おわる").drawAt(m_endButton.center(), Palette::White);
+    }
+};
 void Main()
 {
     // 使用するフォントアセットを登録
     FontAsset::Register(U"Title", 120, U"example/font/AnnyantRoman/AnnyantRoman.ttf");
+    FontAsset::Register(U"End", 120, U"example/font/AnnyantRoman/AnnyantRoman.ttf");
     FontAsset::Register(U"Menu", 30, Typeface::Regular);
     FontAsset::Register(U"Score", 36, Typeface::Bold);
 
@@ -247,6 +301,7 @@ void Main()
     manager
         .add<Title>(State::Title)
         .add<Game>(State::Game)
+        .add<End>(State::End)
         .setFadeColor(ColorF(1.0));
 
     while (System::Update())
