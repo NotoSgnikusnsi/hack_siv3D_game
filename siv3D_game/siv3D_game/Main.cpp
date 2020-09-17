@@ -152,15 +152,6 @@ public:
                 //ボールに当たると加速
                 speed = speed + 20.0;
 
-                //５の倍数の時ボールのスピードの変化
-                /*
-                if (m_score == 5 || m_score == 10 || m_score == 15)
-                {
-                    speed = speed + 100.0;
-                    Vec2 m_ballVelocity ;
-                };
-                */
-
                 // これ以上チェックしない  
                 break;
             }
