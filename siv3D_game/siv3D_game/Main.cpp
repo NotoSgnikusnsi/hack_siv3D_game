@@ -30,6 +30,8 @@ private:
     Rect m_exitButton = Rect(Arg::center = Scene::Center().movedBy(0, 100), 300, 60);
     Transition m_exitTransition = Transition(0.4s, 0.2s);
 
+    Audio m_scene = Audio(U"example/scene.mp3");
+
 public:
 
     Title(const InitData& init)
@@ -47,6 +49,7 @@ public:
 
         if (m_startButton.leftClicked())
         {
+            m_scene.play();
             changeScene(State::Game);
         }
 
@@ -88,7 +91,7 @@ private:
     Array<Rect> m_blocks;
     
     // ボールの速さ
-    int32 speed = 480.0;
+    double speed = 480.0;
 
     // ボールの速度
     Vec2 m_ballVelocity = Vec2(0, -speed);
@@ -105,7 +108,10 @@ private:
     // スコア
     int32 m_score = 0;
 
-    int32 v = 0;
+    int32 m_paddleExtraLength = 0;
+
+    //効果音作成
+    Audio m_sound = Audio(GMInstrument::SquareWave, PianoKey::A5, 0.05s);
 
 public:
 
@@ -129,7 +135,7 @@ public:
     void update() override
     {
         // パドルを操作
-        m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 80 + v , 10);
+        m_paddle = Rect(Arg::center(Cursor::Pos().x, 500), 80 + m_paddleExtraLength, 10);
 
         // ボールを移動
         m_ball.moveBy(m_ballVelocity * Scene::DeltaTime());
@@ -150,7 +156,10 @@ public:
                 ++m_score;
                 
                 //ボールに当たると加速
-                speed = speed + 20.0;
+                speed += 20.0;
+
+                //効果音再生
+                m_sound.playOneShot();
 
                 // これ以上チェックしない  
                 break;
@@ -167,7 +176,7 @@ public:
                 m_item.erase(a);
 
                 //ボールに当たるとパドルの大きさ変化
-                v = v + 10;
+                m_paddleExtraLength += 10;
 
                 // これ以上チェックしない  
                 break;
@@ -201,7 +210,7 @@ public:
         }
 
         //ゲームクリアシーンへ移行
-        if (m_score == 20)
+        if (!m_blocks)
         {
             changeScene(State::End);
         }
@@ -294,6 +303,11 @@ void Main()
         .add<Game>(State::Game)
         .add<End>(State::End)
         .setFadeColor(ColorF(1.0));
+
+    // 音声ファイルを読み込んで Audio を作成
+    Audio m_backmusic = Audio(U"example/backmusic.mp3", Arg::loop = true);
+    //再生
+    m_backmusic.play();
 
     while (System::Update())
     {
