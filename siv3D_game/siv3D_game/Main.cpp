@@ -67,16 +67,16 @@ public:
         FontAsset(U"Title")(titleText).drawAt(center);
 
         m_startButton.draw(ColorF(1.0, m_startTransition.value())).drawFrame(2);
-        m_exitButton.draw(ColorF(1.0, m_exitTransition.value())).drawFrame(2);
+        //m_exitButton.draw(ColorF(1.0, m_exitTransition.value())).drawFrame(2);
 
         FontAsset(U"Menu")(U"はじめる").drawAt(m_startButton.center(), Palette::White);
-        FontAsset(U"Menu")(U"おわる").drawAt(m_exitButton.center(), Palette::White);
+        //FontAsset(U"Menu")(U"おわる").drawAt(m_exitButton.center(), Palette::White);
 
         Rect(0, 500, Scene::Width(), Scene::Height() - 500)
             .draw(Arg::top = ColorF(0.0, 0.0), Arg::bottom = ColorF(0.0, 0.5));
 
-        const int32 highScore = getData().highScore;
-        FontAsset(U"Score")(U"High score: {}"_fmt(highScore)).drawAt(Vec2(620, 550));
+        //const int32 highScore = getData().highScore;
+        //FontAsset(U"Score")(U"High score: {}"_fmt(highScore)).drawAt(Vec2(620, 550));
     }
 };
 
@@ -241,6 +241,7 @@ public:
     }
 };
 
+//ゲームクリアシーン
 class End : public MyApp::Scene
 {
 private:
@@ -268,8 +269,8 @@ public:
 
         if (m_endButton.leftClicked())
         {
-            System::Exit();
-            //changeScene(State::Title);
+            //System::Exit();
+            changeScene(State::Title);
         }
     }
 
@@ -282,9 +283,10 @@ public:
 
         m_endButton.draw(ColorF(1.0, m_endTransition.value())).drawFrame(2);
 
-        FontAsset(U"Menu")(U"おわる").drawAt(m_endButton.center(), Palette::White);
+        FontAsset(U"Menu")(U"スタートへ").drawAt(m_endButton.center(), Palette::White);
     }
 };
+
 void Main()
 {
     // 使用するフォントアセットを登録
